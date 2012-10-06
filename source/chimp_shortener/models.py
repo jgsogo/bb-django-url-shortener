@@ -7,7 +7,7 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 
-from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH, SITE_BASE_URL
+from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
 
 log = logging.getLogger(__name__)
 
@@ -38,11 +38,20 @@ class Link(models.Model):
             raise ValueError('Link already exists')
 
         instance = cls()
-        instance._hash = cls.generate_unique_random_hash()
+        instance._hash = cls.generate_unique_hash(instance)
         instance.url = url
 
         instance.save()
         return instance
+
+    @classmethod
+    def generate_unique_hash(cls, instance):
+        if HASH_STRATEGY is 'random':
+            return cls.generate_unique_random_hash()
+        else:
+            instance.save() # To get an id.
+            return base64.urlsafe_b64encode(str(instance.id)).strip('=')
+
 
     @classmethod
     def generate_unique_random_hash(cls, i=0):
