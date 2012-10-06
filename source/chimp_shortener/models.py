@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 
 from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
+from chimp_shortener.baseconv import base62
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class Link(models.Model):
             return cls.generate_unique_random_hash()
         else:
             instance.save() # To get an id.
-            return base64.urlsafe_b64encode(str(instance.id)).strip('=')
+            return base64.urlsafe_b64encode(base62.from_decimal(instance.id)).strip('=')
 
 
     @classmethod
