@@ -5,8 +5,9 @@ import logging
 from django.db import models
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 
-from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH
+from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH, SITE_BASE_URL
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +17,10 @@ class Link(models.Model):
     created = models.DateTimeField(auto_now=False, auto_now_add=True)
 
     def __unicode__(self):
-        return self._hash
+        return u'%s' % self.url
+
+    def get_short_link(self):
+        return u'%s%s' % (SITE_BASE_URL, reverse('short_link', kwargs={'base62':self._hash}))
 
     @classmethod
     def get_or_create(cls, url):

@@ -1,10 +1,14 @@
+import logging
+
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponsePermanentRedirect
+from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 
 from chimp_shortener.models import Link
 from chimp_shortener.signals import link_followed
 
-def follow(request, base62_id):
-    link = get_object_or_404(Link, _hash = base62_id)
-    link_followed.send(sender=link, request=request)
-    return HttpResponsePermanentRedirect(link.url)
+log = logging.getLogger(__name__)
+
+def follow(request, base62):
+    link = get_object_or_404(Link, _hash = base62)
+    link_followed.send_robust(sender=link, request=request)
+    return HttpResponseRedirect(link.url)

@@ -1,5 +1,7 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import patterns, include, url
+
+from chimp_shortener.views import follow
 
 urlpatterns = patterns('',
-    (r'^(?P<base62_id>\w+)$', 'chimp_shortener.views.follow'),
-)
+    url(r'^(?P<base62>\w+)$', follow, name='short_link'),
+    )
