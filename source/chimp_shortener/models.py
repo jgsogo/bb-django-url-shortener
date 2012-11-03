@@ -21,7 +21,7 @@ class Link(models.Model):
         return u'%s' % self.url
 
     def get_short_link(self):
-        return u'%s%s' % (SITE_BASE_URL, reverse('short_link', kwargs={'base62':self._hash}))
+        return u'%s/%s' % (SITE_BASE_URL, self._hash)
 
     @classmethod
     def get_or_create(cls, url):
