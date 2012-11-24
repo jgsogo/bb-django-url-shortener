@@ -10,11 +10,11 @@ from django.core.urlresolvers import reverse
 from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
 from chimp_shortener.baseconv import base62
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('chimppunch')
 
 class Link(models.Model):
     _hash = models.CharField(max_length=8) # n-char unique random string
-    url = models.CharField(max_length=512) # http://www.boutell.com/newfaq/misc/urllength.html
+    url = models.CharField(max_length=2083) # http://www.boutell.com/newfaq/misc/urllength.html
     created = models.DateTimeField(auto_now=False, auto_now_add=True)
 
     def __unicode__(self):
@@ -32,6 +32,7 @@ class Link(models.Model):
 
     @classmethod
     def create(cls, url):
+        log.debug("Link::create(url='%s')" % url)
         if cls.url_is_valid(url) == False:
             raise ValueError('Invalid URL')
 
