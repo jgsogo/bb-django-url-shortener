@@ -1,0 +1,23 @@
+syntax: glob
+build
+*.pdf
+*.tex
+*~
+*.pyc
+*.aux
+*.log
+*.out
+*.toc
+*.sqlite
+*.db
+*.orig
+local_settings.py
+local_hacks.py
+local_fixtures
+chimppunch/secret.py
+source/data/
+*cache
+
+
+syntax: regexp
+^static/
