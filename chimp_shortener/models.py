@@ -5,9 +5,8 @@ import logging
 from django.db import models
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
 
-from chimp_shortener.settings import LINK_UNIQUENESS, LINK_VALIDATION, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
+from chimp_shortener.settings import LINK_UNIQUENESS, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
 from chimp_shortener.baseconv import base62
 
 log = logging.getLogger('chimppunch')
@@ -33,7 +32,7 @@ class Link(models.Model):
     @classmethod
     def create(cls, url):
         log.debug("Link::create(url='%s')" % url)
-        if cls.url_is_valid(url) == False:
+        if not cls.url_is_valid(url):
             raise ValueError('Invalid URL')
 
         if LINK_UNIQUENESS and cls.link_exists(url) == True:
@@ -71,27 +70,16 @@ class Link(models.Model):
 
     @classmethod
     def hash_exists(cls, hash_):
-        try:
-            row = Link.objects.get(_hash=hash_)
-        except cls.DoesNotExist:
-            return False
-        else:
-            return True
+        return Link.objects.filter(_hash=hash_).exists()
 
     @classmethod
     def link_exists(cls, url):
-        try:
-            row = Link.objects.get(url=url)
-        except cls.DoesNotExist:
-            return False
-        else:
-            return True
+        return Link.objects.filter(url=url).exists()
 
     @classmethod
     def url_is_valid(cls, url):
-        validate = URLValidator()
         try:
-            validate(url)
+            URLValidator()(url)
             return True
         except ValidationError:
             return False
