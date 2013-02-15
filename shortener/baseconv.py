@@ -56,3 +56,10 @@ hexconv = BaseConverter('0123456789ABCDEF')
 base62 = BaseConverter(
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz'
 )
+
+
+if __name__ == '__main__':
+    nums = [-10 ** 10, 10 ** 10] + range(-100, 100)
+    for convertor in [bin, hexconv, base62]:
+        for i in nums:
+            assert i == bin.to_decimal(bin.from_decimal(i)), '%s failed' % i
