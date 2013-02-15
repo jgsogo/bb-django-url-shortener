@@ -6,10 +6,10 @@ from django.db import models
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
-from chimp_shortener.settings import LINK_UNIQUENESS, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
-from chimp_shortener.baseconv import base62
+from shortener.settings import LINK_UNIQUENESS, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
+from shortener.baseconv import base62
 
-log = logging.getLogger('chimppunch')
+log = logging.getLogger(__name__)
 
 class Link(models.Model):
     _hash = models.CharField(max_length=8) # n-char unique random string
@@ -30,7 +30,7 @@ class Link(models.Model):
             return cls.create(url)
 
     @classmethod
-    def create(cls, url):
+    def create(cls, url, commit=True):
         log.debug("Link::create(url='%s')" % url)
         if not cls.url_is_valid(url):
             raise ValueError('Invalid URL')
@@ -42,7 +42,8 @@ class Link(models.Model):
         instance._hash = cls.generate_unique_hash(instance)
         instance.url = url
 
-        instance.save()
+        if commit:
+            instance.save()
         return instance
 
     @classmethod

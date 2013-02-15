@@ -1,10 +1,10 @@
 from django.conf.urls import patterns, include, url
 
-from chimp_shortener.settings import WORKING_MODE
-from chimp_shortener import MODES
+from shortener.settings import WORKING_MODE
+from shortener import MODES
 
 if WORKING_MODE is MODES.redirects:
-    from chimp_shortener.views import follow
+    from shortener.views import follow
     urlpatterns = patterns('',
         url(r'^(?P<base62>\w+)$', follow, name='short_link'),
         )

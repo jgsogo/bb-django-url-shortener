@@ -3,8 +3,8 @@ import logging
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 
-from chimp_shortener.models import Link
-from chimp_shortener.signals import link_followed
+from shortener.models import Link
+from shortener.signals import link_followed
 
 log = logging.getLogger(__name__)
 

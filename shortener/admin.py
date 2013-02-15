@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from chimp_shortener.models import Link
+from shortener.models import Link
 
 class LinkAdmin(admin.ModelAdmin):
     list_display = ('_hash','url', 'created')
