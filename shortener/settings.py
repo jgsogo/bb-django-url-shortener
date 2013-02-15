@@ -1,6 +1,9 @@
 
 from django.conf import settings
 
+LINK_MIXIN = getattr(settings, 'SHORTENER_LINK_MIXIN', None)
+LOGIN_REQUIRED = getattr(settings, 'SHORTENER_LOGIN_REQUIRED', False)
+
 LINK_UNIQUENESS = getattr(settings, 'SHORTENER_LINK_UNIQUENESS', False)
 
 HASH_STRATEGY = getattr(settings, 'SHORTENER_HASH_STRATEGY', None)

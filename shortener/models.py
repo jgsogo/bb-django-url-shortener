@@ -6,29 +6,33 @@ from django.db import models
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
-from shortener.settings import LINK_UNIQUENESS, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY
-from shortener.baseconv import base62
+from shortener.settings import LINK_UNIQUENESS, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY, LINK_MIXIN
+from shortener.utils.baseconv import base62
+from shortener.utils import get_basemodel_mixin
 
 log = logging.getLogger(__name__)
 
-class Link(models.Model):
+class BaseLink(models.Model):
     _hash = models.CharField(max_length=8) # n-char unique random string
     url = models.CharField(max_length=2083) # http://www.boutell.com/newfaq/misc/urllength.html
     created = models.DateTimeField(auto_now=False, auto_now_add=True)
+
+    class Meta:
+        abstract = True
 
     def __unicode__(self):
         return u'%s' % self.url
 
     def get_short_link(self):
         return u'%s/%s' % (SITE_BASE_URL, self._hash)
-
+    """
     @classmethod
     def get_or_create(cls, url):
         try:
-            return Link.objects.get(url=url)
+            return cls.objects.get(url=url)
         except cls.DoesNotExist:
             return cls.create(url)
-
+    """
     @classmethod
     def create(cls, url, commit=True):
         log.debug("Link::create(url='%s')" % url)
@@ -71,11 +75,11 @@ class Link(models.Model):
 
     @classmethod
     def hash_exists(cls, hash_):
-        return Link.objects.filter(_hash=hash_).exists()
+        return cls.objects.filter(_hash=hash_).exists()
 
     @classmethod
     def link_exists(cls, url):
-        return Link.objects.filter(url=url).exists()
+        return cls.objects.filter(url=url).exists()
 
     @classmethod
     def url_is_valid(cls, url):
@@ -84,3 +88,15 @@ class Link(models.Model):
             return True
         except ValidationError:
             return False
+
+
+if LINK_MIXIN:
+    Mixin = get_basemodel_mixin(LINK_MIXIN)
+    class Link(Mixin, BaseLink):
+        class Meta(Mixin.Meta):
+            abstract = False
+
+else:
+    class Link(BaseLink):
+        class Meta:
+            abstract = False
