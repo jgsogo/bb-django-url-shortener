@@ -1,10 +1,17 @@
-import re
 
-from chimp_shortener_data.models import UserAgentType, LINK_RE
-from chimp_shortener_data.utils import UASparser
+from django.http import HttpResponse
+
+from shortener_data.models import UserAgent
+from shortener_data.settings import ROBOTS_FILEPATH
 
 def robots(request):
-    uasparser = UASparser()
-    ret = uasparser.parse(request.META['HTTP_USER_AGENT'])
-    user_agent_type, created = UserAgentType.objects.get_or_create(name=ret['typ'])
-    user_agent_has_url = True if re.search(LINK_RE, request.META['HTTP_USER_AGENT']) else False
+    UserAgent.on_robots(request.META['HTTP_USER_AGENT'])
+    robots_str = "User-agent: *\nDisallow: /\n"
+    if ROBOTS_FILEPATH:
+        try:
+            robots_str = open(ROBOTS_FILEPATH, 'r').read()
+        except IOError:
+            pass
+    return HttpResponse(robots_str, mimetype="text/plain")
+
+

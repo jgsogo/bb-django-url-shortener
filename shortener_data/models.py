@@ -17,10 +17,60 @@ LINK_RE = re.compile(ur'\b(?:(?:https?)://|www\.)[-A-Z0-9+&@#/%=~_|$?!:,.]*[A-Z0
 
 class UserAgentType(models.Model):
     name = models.CharField(max_length=140)
-    is_human = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return self.name
+        return str(self.name)
+
+class UserAgent(models.Model):
+    user_agent_string = models.TextField()
+    #_is_human = models.FloatField(default=1)
+    _hit_robots = models.PositiveIntegerField(default=0)
+
+    # User agent
+    typ = models.ForeignKey(UserAgentType)
+    name = models.CharField(max_length=140)
+    family = models.CharField(max_length=140)
+    url = models.URLField()
+    company = models.CharField(max_length=140)
+    company_url = models.URLField()
+    icon = models.URLField()
+
+    # Operating system
+    os_name = models.CharField(max_length=140)
+    os_family = models.CharField(max_length=140)
+    os_url = models.URLField()
+    os_company = models.CharField(max_length=140)
+    os_company_url = models.URLField()
+    os_icon = models.URLField()
+
+    def __unicode__(self):
+        return str(self.typ)
+
+    @classmethod
+    def create(cls, useragent_string, commit=True):
+        instance, created = cls.objects.get_or_create(user_agent_string=useragent_string)
+        if created:
+            try:
+                uasparser = UASparser()
+                ret = uasparser.parse(instance.user_agent_string)
+                instance.typ, created = UserAgentType.objects.get_or_create(name=ret['typ'])
+            except:
+                pass
+            finally:
+                if commit:
+                    instance.save()
+        return instance
+
+    @classmethod
+    def on_robots(cls, useragent_string):
+        instance = cls.create(useragent_string)
+        instance._hit_robots = F('_hit_robots')+1
+        instance.save()
+
+    @property
+    def is_human(self):
+        # End user must be able to modify confidence interval
+        return  len(self.requestdata_set.all()) > self._hit_robots
 
 
 class RequestData(models.Model):
@@ -28,7 +78,6 @@ class RequestData(models.Model):
     link = models.ForeignKey(Link)
     datetime = models.DateTimeField(auto_now_add=True, editable=False)
 
-    meta = models.TextField()
     accept = models.TextField()
     accept_encoding = models.CharField(max_length=140)
     accept_language = models.CharField(max_length=140)
@@ -42,8 +91,7 @@ class RequestData(models.Model):
 
     remote_addr = models.CharField(max_length=15)
 
-    user_agent_type = models.ForeignKey(UserAgentType)
-    user_agent_has_url = models.BooleanField(default=False)
+    user_agent = models.ForeignKey(UserAgent)
 
     objects = RequestDataManager()
 
@@ -61,6 +109,15 @@ class RequestData(models.Model):
         headers.update({'remote_addr' : request.META['REMOTE_ADDR']})
         return headers
 
+    @classmethod
+    def create(cls, request, link):
+        data = cls.parse_request(request)
+        request_data = cls(**data)
+        request_data.user_agent = UserAgent.create(request.META['HTTP_USER_AGENT'])
+        request_data.link = link
+        request_data.save()
+        return request_data
+
 
 """
     Signals
@@ -69,13 +126,7 @@ from shortener.signals import link_followed
 
 def on_request(sender, request, **kwargs):
     try:
-        data = RequestData.parse_request(request)
-        request_data = RequestData(**data)
-        uasparser = UASparser()
-        ret = uasparser.parse(request.META['HTTP_USER_AGENT'])
-        request_data.user_agent_type, created = UserAgentType.objects.get_or_create(name=ret['typ'])
-        #request_data.user_agent_url = ret['ua_url']
-        request_data.user_agent_has_url = True if re.search(LINK_RE, request.META['HTTP_USER_AGENT']) else False
+        request_data = RequestData.create(request, sender)
     except:
         request_data = RequestData()
     request_data.link = sender
