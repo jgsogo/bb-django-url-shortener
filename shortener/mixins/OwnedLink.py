@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from shortener.settings import LOGIN_REQUIRED
 
 
-class EnhancedLink(models.Model):
+class OwnedLink(models.Model):
 
     user = models.ForeignKey(User, blank=not LOGIN_REQUIRED, null= not LOGIN_REQUIRED)
     created = models.DateTimeField(auto_now=True, auto_now_add=False)
@@ -17,7 +17,8 @@ class EnhancedLink(models.Model):
 
     @classmethod
     def create(cls, url, user):
-        instance = super(EnhancedLink, cls).create(url, commit=False)
+        instance = super(OwnedLink, cls).create(url, commit=False)
         instance.user = user
         instance.save()
         return instance
+
