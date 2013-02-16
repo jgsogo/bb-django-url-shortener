@@ -1,7 +1,7 @@
 import logging
 
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 
 from shortener.models import Link
 from shortener.signals import link_followed

@@ -1,21 +1,21 @@
-import base64
-import os
+
 import logging
 
 from django.db import models
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
-from shortener.settings import LINK_UNIQUENESS, HASH_SEED_LENGTH, SITE_BASE_URL, HASH_STRATEGY, LINK_MIXIN
+from shortener.settings import LINK_UNIQUENESS, SITE_BASE_URL, HASH_STRATEGY, LINK_MIXIN, MAX_HASH_LENGTH
 from shortener.utils.baseconv import base62
 from shortener.utils import get_basemodel_mixin
 
 log = logging.getLogger(__name__)
 
 class BaseLink(models.Model):
-    _hash = models.CharField(max_length=8) # n-char unique random string
+    baseconverter = base62
+
+    _hash = models.CharField(max_length=MAX_HASH_LENGTH, unique=True) # n-char unique random string
     url = models.CharField(max_length=2083) # http://www.boutell.com/newfaq/misc/urllength.html
-    created = models.DateTimeField(auto_now=False, auto_now_add=True)
 
     class Meta:
         abstract = True
@@ -25,14 +25,14 @@ class BaseLink(models.Model):
 
     def get_short_link(self):
         return u'%s/%s' % (SITE_BASE_URL, self._hash)
-    """
+
     @classmethod
     def get_or_create(cls, url):
         try:
             return cls.objects.get(url=url)
         except cls.DoesNotExist:
             return cls.create(url)
-    """
+
     @classmethod
     def create(cls, url, commit=True):
         log.debug("Link::create(url='%s')" % url)
@@ -52,26 +52,15 @@ class BaseLink(models.Model):
 
     @classmethod
     def generate_unique_hash(cls, instance):
-        if HASH_STRATEGY is 'random':
-            return cls.generate_unique_random_hash()
+        if HASH_STRATEGY:
+            hash = HASH_STRATEGY(instance, MAX_HASH_LENGTH)
+            if cls.hash_exists(hash):
+                raise ValueError("Generated hash already exists")
+            return hash
         else:
-            instance.save() # To get an id.
-            return base64.urlsafe_b64encode(base62.from_decimal(instance.id)).strip('=')
-
-
-    @classmethod
-    def generate_unique_random_hash(cls, i=0):
-        hash_ = cls.generate_random_hash()
-        if cls.hash_exists(hash_):
-            if (i>=100):
-                log.warn('Hashes are clashing, consider a new random factory.')
-            return cls.generate_unique_random_hash(i=i+1)
-        else:
-            return hash_
-
-    @classmethod
-    def generate_random_hash(cls):
-        return base64.urlsafe_b64encode(os.urandom(HASH_SEED_LENGTH)).strip('=')
+            if not instance.id:
+                instance.save() # To get an id.
+            return cls.baseconverter.from_decimal(instance.id)
 
     @classmethod
     def hash_exists(cls, hash_):

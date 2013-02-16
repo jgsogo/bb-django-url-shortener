@@ -4,10 +4,10 @@ import logging
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from chimp_shortener.models import Link
+from shortener.models import Link
 
-from chimp_shortener_data.managers import RequestDataManager
-from chimp_shortener_data.utils import UASparser
+from shortener_data.managers import RequestDataManager
+from shortener_data.utils import UASparser
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class RequestData(models.Model):
 """
     Signals
 """
-from chimp_shortener.signals import link_followed
+from shortener.signals import link_followed
 
 def on_request(sender, request, **kwargs):
     try:

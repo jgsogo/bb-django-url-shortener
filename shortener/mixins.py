@@ -10,7 +10,7 @@ from shortener.settings import LOGIN_REQUIRED
 class EnhancedLink(models.Model):
 
     user = models.ForeignKey(User, blank=not LOGIN_REQUIRED, null= not LOGIN_REQUIRED)
-    created = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     class Meta:
         abstract = True
