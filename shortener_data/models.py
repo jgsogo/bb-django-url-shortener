@@ -70,7 +70,7 @@ class UserAgent(models.Model):
     @property
     def is_human(self):
         # End user must be able to modify confidence interval
-        return  len(self.requestdata_set.all()) > self._hit_robots
+        return  (self.requestdata_set.count() > self._hit_robots)
 
 
 class RequestData(models.Model):
@@ -118,6 +118,11 @@ class RequestData(models.Model):
         request_data.save()
         return request_data
 
+    @property
+    def is_human(self):
+        return self.user_agent.is_human
+
+Link.visits = property(lambda u: u.requestdata_set.human().count())
 
 """
     Signals
