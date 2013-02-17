@@ -28,18 +28,18 @@ class UserAgent(models.Model):
 
     # User agent
     typ = models.ForeignKey(UserAgentType)
-    name = models.CharField(max_length=140)
-    family = models.CharField(max_length=140)
+    name = models.CharField(max_length=255)
+    family = models.CharField(max_length=255)
     url = models.URLField()
-    company = models.CharField(max_length=140)
+    company = models.CharField(max_length=255)
     company_url = models.URLField()
     icon = models.URLField()
 
     # Operating system
-    os_name = models.CharField(max_length=140)
-    os_family = models.CharField(max_length=140)
+    os_name = models.CharField(max_length=255)
+    os_family = models.CharField(max_length=255)
     os_url = models.URLField()
-    os_company = models.CharField(max_length=140)
+    os_company = models.CharField(max_length=255)
     os_company_url = models.URLField()
     os_icon = models.URLField()
 
@@ -48,23 +48,26 @@ class UserAgent(models.Model):
 
     @classmethod
     def create(cls, useragent_string, commit=True):
-        instance, created = cls.objects.get_or_create(user_agent_string=useragent_string)
-        if created:
+        try:
+            instance = cls.objects.get(user_agent_string=useragent_string)
+            return instance
+        except cls.DoesNotExist:
+            instance = cls(user_agent_string=useragent_string)
             try:
                 uasparser = UASparser()
-                ret = uasparser.parse(instance.user_agent_string)
+                ret = uasparser.parse(useragent_string)
                 instance.typ, created = UserAgentType.objects.get_or_create(name=ret['typ'])
             except:
                 pass
             finally:
                 if commit:
                     instance.save()
-        return instance
+            return instance
 
     @classmethod
     def on_robots(cls, useragent_string):
         instance = cls.create(useragent_string)
-        instance._hit_robots = F('_hit_robots')+1
+        instance._hit_robots = models.F('_hit_robots')+1
         instance.save()
 
     @property
@@ -79,25 +82,29 @@ class RequestData(models.Model):
     datetime = models.DateTimeField(auto_now_add=True, editable=False)
 
     accept = models.TextField()
-    accept_encoding = models.CharField(max_length=140)
-    accept_language = models.CharField(max_length=140)
-    cache_control = models.CharField(max_length=140)
-    connection = models.CharField(max_length=140)
-    host = models.CharField(max_length=140)
-    referer = models.CharField(max_length=500)
-    user_agent = models.CharField(max_length=140)
-    via = models.CharField(max_length=140)
-    x_forwarded_for = models.CharField(max_length=140)
+    accept_encoding = models.CharField(max_length=255)
+    accept_language = models.CharField(max_length=255)
+    cache_control = models.CharField(max_length=255)
+    connection = models.CharField(max_length=255)
+    host = models.CharField(max_length=255)
+    referer = models.URLField(_('referer'), max_length=500)
+    user_agent = models.CharField(max_length=255)
+    via = models.CharField(max_length=255)
+    x_forwarded_for = models.CharField(max_length=255)
 
-    remote_addr = models.CharField(max_length=15)
+    remote_addr = models.IPAddressField(_('IP address'))
 
     user_agent = models.ForeignKey(UserAgent)
 
     objects = RequestDataManager()
 
     class Meta:
-        verbose_name = _('Request')
-        verbose_name_plural = _('Requests')
+        verbose_name = _('request')
+        verbose_name_plural = _('requests')
+        ordering = ('-datetime',)
+
+    def __unicode__(self):
+        return "[%s] %s" % (self.datetime, self.link)
 
     @classmethod
     def parse_request(cls, request):
@@ -110,12 +117,14 @@ class RequestData(models.Model):
         return headers
 
     @classmethod
-    def create(cls, request, link):
+    def create(cls, request, link, commit=True):
         data = cls.parse_request(request)
+        user_agent = data.pop('user_agent')
         request_data = cls(**data)
-        request_data.user_agent = UserAgent.create(request.META['HTTP_USER_AGENT'])
+        request_data.user_agent = UserAgent.create(user_agent)
         request_data.link = link
-        request_data.save()
+        if commit:
+            request_data.save()
         return request_data
 
     @property
@@ -131,10 +140,11 @@ from shortener.signals import link_followed
 
 def on_request(sender, request, **kwargs):
     try:
-        request_data = RequestData.create(request, sender)
+        request_data = RequestData.create(request, sender, commit=False)
     except:
         request_data = RequestData()
-    request_data.link = sender
-    request_data.save()
+        request_data.link = sender
+    finally:
+        request_data.save()
 
 link_followed.connect(on_request)
