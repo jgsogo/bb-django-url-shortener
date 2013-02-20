@@ -19,6 +19,7 @@ class BaseconvTest(TestCase):
     """
 
     def _baseconv_test(self, str_code, max_chars=8):
+        zero_alike = str_code[0]
         log.debug("Test baseconv with str_code '%s' (%s)" % (str_code, len(str_code)))
         bin = BaseConverter(str_code)
         base = len(str_code)
@@ -38,7 +39,7 @@ class BaseconvTest(TestCase):
             log.debug("Test reverse conversion for number '%s'" % number)
             self.assertEqual(number, bin.to_decimal(bin.from_decimal(number)))
             char_str = ''.join(random.choice(str_code) for x in range(max_chars))
-            char_str = re.sub("^0+", "", char_str) # Remove leading zeros
+            char_str = re.sub("^%s+"%zero_alike, "", char_str) # Remove leading zeros
             log.debug("Test reverse conversion for char string '%s'" % char_str)
             self.assertEqual(char_str, bin.from_decimal(bin.to_decimal(char_str)))
 

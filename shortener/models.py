@@ -5,7 +5,7 @@ from django.db import models
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
-from shortener.settings import LINK_UNIQUENESS, SITE_BASE_URL, HASH_STRATEGY, LINK_MIXIN, MAX_HASH_LENGTH
+from shortener.settings import LINK_UNIQUENESS, SITE_BASE_URL, HASH_STRATEGY, LINK_MIXIN, MAX_HASH_LENGTH, MIN_HASH_LENGTH
 from shortener.utils.baseconv import base62
 from shortener.utils import get_basemodel_mixin
 
@@ -34,7 +34,7 @@ class BaseLink(models.Model):
             return cls.create(url)
 
     @classmethod
-    def create(cls, url, commit=True):
+    def create(cls, url):
         log.debug("Link::create(url='%s')" % url)
         if not cls.url_is_valid(url):
             raise ValueError('Invalid URL')
@@ -43,24 +43,24 @@ class BaseLink(models.Model):
             raise ValueError('Link already exists')
 
         instance = cls()
-        instance._hash = cls.generate_unique_hash(instance)
+        instance._hash = cls.generate_unique_hash(instance, MIN_HASH_LENGTH, MAX_HASH_LENGTH)
         instance.url = url
 
-        if commit:
-            instance.save()
+        instance.save()
         return instance
 
     @classmethod
-    def generate_unique_hash(cls, instance):
+    def generate_unique_hash(cls, instance, min_hash_length, max_hash_length):
         if HASH_STRATEGY:
-            hash = HASH_STRATEGY(instance, MAX_HASH_LENGTH)
+            hash = HASH_STRATEGY(instance, min_hash_length, max_hash_length)
             if cls.hash_exists(hash):
                 raise ValueError("Generated hash already exists")
             return hash
         else:
             if not instance.id:
                 instance.save() # To get an id.
-            return cls.baseconverter.from_decimal(instance.id)
+            initial_count = pow(len(cls.baseconverter.digits), min_hash_length-1)
+            return cls.baseconverter.from_decimal(initial_count + instance.id)
 
     @classmethod
     def hash_exists(cls, hash_):
@@ -78,6 +78,10 @@ class BaseLink(models.Model):
         except ValidationError:
             return False
 
+    @classmethod
+    def max_shortened_available(cls):
+        chars = len(cls.baseconverter.digits)
+        return pow(chars, MAX_HASH_LENGTH) - pow(chars, MIN_HASH_LENGTH)
 
 if LINK_MIXIN:
     Mixin = get_basemodel_mixin(LINK_MIXIN)
