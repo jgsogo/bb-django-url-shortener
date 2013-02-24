@@ -88,7 +88,6 @@ class RequestData(models.Model):
     connection = models.CharField(max_length=255)
     host = models.CharField(max_length=255)
     referer = models.URLField(_('referer'), max_length=500)
-    user_agent = models.CharField(max_length=255)
     via = models.CharField(max_length=255)
     x_forwarded_for = models.CharField(max_length=255)
 
